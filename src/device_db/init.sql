@@ -19,15 +19,16 @@ CREATE TYPE security_camera_status_enum AS ENUM ('armed', 'disarmed');
 -- Create Devices Table
 CREATE TABLE devices (
     id SERIAL PRIMARY KEY,
-    device_type device_types_enum NOT NULL,
+    device_type device_types NOT NULL,
     ip_address INET NOT NULL,
-    is_online BOOLEAN NOT NULL
+    registration_date TIMESTAMP DEFAULT NOW()
 );
 
 -- Create Smart Lights Table
 CREATE TABLE smart_lights (
     id SERIAL PRIMARY KEY,
     device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
+    is_online BOOLEAN NOT NULL DEFAULT TRUE,
     last_updated TIMESTAMP,
     status smart_light_status_enum
 );
@@ -36,6 +37,7 @@ CREATE TABLE smart_lights (
 CREATE TABLE thermostats (
     id SERIAL PRIMARY KEY,
     device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
+    is_online BOOLEAN NOT NULL DEFAULT TRUE,
     last_updated TIMESTAMP,
     temperature INTEGER,
     humidity INTEGER
@@ -45,6 +47,7 @@ CREATE TABLE thermostats (
 CREATE TABLE security_cameras (
     id SERIAL PRIMARY KEY,
     device_id INTEGER REFERENCES devices(id) ON DELETE CASCADE,
+    is_online BOOLEAN NOT NULL DEFAULT TRUE,
     last_updated TIMESTAMP,
     status security_camera_status_enum
 );

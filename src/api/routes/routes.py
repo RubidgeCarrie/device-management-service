@@ -1,26 +1,56 @@
+from importlib import import_module
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+)
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql import text
+from api.config import API_VERSION
+from sqlalchemy.ext.asyncio import AsyncSession
+from api.models.devices import DEVICE_TYPE_MODEL_MAP, DeviceRegister
+
+from device_db.connection import get_device_db
 
 
+api = import_module(f".{API_VERSION}", package="app.api")
+router = APIRouter()
 
-from sqlalchemy import outerjoin
 
+@router.get(
+    "/device/{device_id}",
+    response_model=dict,
+    tags=["Device"],
+)
+async def get_device_details(device_id: int, session: AsyncSession = Depends(get_async_session)):
+    # Fetch the main device entry
+    result = await session.execute(select(DeviceRegister).where(DeviceRegister.id == device_id))
+    device = result.scalars().first()
 
-@outerjoin.post("/post", response_model=ChildInDB, name="Children: create-child", status_code=status.HTTP_201_CREATED)
-async def post_child(
-    child_new: ChildCreate,
-    child_repo: ChildRepository = Depends(get_repository(ChildRepository)),
-) -> ChildInDB:
-    child_created = await child_repo.create(obj_new=child_new)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
 
-    return child_created
+    # Dynamically get the correct related table
+    related_model = DEVICE_TYPE_MODEL_MAP.get(device.device_type.value)
 
-@router.get("/get_by_id", response_model=ChildInDB | None, name="children: read-one-child")
-async def get_one_child(
-    id: int,
-    child_repo: ChildRepository = Depends(get_repository(ChildRepository)),
-) -> ChildInDB | None:
-     child_db = await child_repo.read_by_id(id=id)
-     if not child_db:
-        logger.warning(f"No child with id = {id}.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No child with id = {id}.")
+    # Fetch related data using JOIN if model exists
+    related_data = None
+    if related_model:
+        join_result = await session.execute(
+            select(DeviceRegister, related_model)
+            .join(related_model, related_model.device_id == DeviceRegister.id, isouter=True)
+            .where(DeviceRegister.id == device_id)
+            .options(joinedload(DeviceRegister))
+        )
+        related_data = join_result.first()[1] if join_result.first() else None
 
-     return child_db
+    return {
+        "id": device.id,
+        "device_type": device.device_type.value,
+        "ip_address": str(device.ip_address),
+        "registration_date": device.registration_date,
+        "is_online": related_data.is_online if related_data else None,
+        "device_details": related_data
+    }

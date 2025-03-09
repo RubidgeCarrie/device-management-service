@@ -1,6 +1,7 @@
 from enum import Enum
 from ipaddress import IPv4Address
 from datetime import datetime
+from typing import Any, Dict, Type
 from sqlalchemy import (
     Column, Integer, String, Boolean, ForeignKey, DateTime, Enum as SQLEnum
 )
@@ -9,57 +10,64 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
+
 # Enums
-class DeviceTypes(str, Enum):  # FIXED: Proper Enum definition
+class DeviceTypes(str, Enum):
     SMART_LIGHTS = "smart_lights"
     THERMOSTATS="thermostats"
     SECURITY_CAMERAS = "secuirty_cameras"
 
-class DeviceStatus(Enum):  # FIXED: Changed to SQL-compatible Enum
+class DeviceStatus(Enum):
     ON = 1
     OFF = 0
 
-class SmartLightStatus(str, Enum):  # FIXED: Converted to proper Enum
+class SmartLightStatus(str, Enum): 
     ON = "on"
     OFF = "off"
 
-class SecurityCameraStatus(str, Enum):  # FIXED: Converted to proper Enum
+class SecurityCameraStatus(str, Enum): 
     ARMED = "armed"
     DISARMED = "disarmed"
 
-# Devices Table
-class Devices(Base):
+# Device Registration
+class DeviceRegister(Base):
+    """Stores immutable/ long lived configuration for devices"""
     __tablename__ = "devices"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    device_type = Column(SQLEnum(DeviceTypes), nullable=False)  # FIXED: Proper ENUM usage
-    ip_address = Column(INET, nullable=False)  # FIXED: Use INET type for IP addresses
-    is_online = Column(Boolean, nullable=False)
+    device_type = Column(SQLEnum(DeviceTypes), nullable=False) 
+    ip_address = Column(INET, nullable=False) 
+    registration_date = Column(DateTime, default=datetime.utcnow)
 
-# Smart Lights Table
-class SmartLights(Base):
+# Device specific configuration and status updates
+class BaseDevice(Base):
+    __abstract__ = True 
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    device_id = Column(Integer, ForeignKey("devices.id", ondelete="CASCADE"), index=True)
+    is_online = Column(Boolean, nullable=False, default=True)
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class SmartLights(BaseDevice):
     __tablename__ = "smart_lights"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    device_id = Column(Integer, ForeignKey("devices.id", ondelete="CASCADE"), index=True)  # FIXED: Add CASCADE delete
-    last_updated = Column(DateTime, default=datetime.utcnow)  # FIXED: Correct DateTime usage
-    status = Column(SQLEnum(SmartLightStatus))  # FIXED: Use ENUM instead of list
+    status = Column(SQLEnum(SmartLightStatus), nullable=False) 
 
-# Thermostats Table
-class Thermostats(Base):
+class Thermostats(BaseDevice):
     __tablename__ = "thermostats"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    device_id = Column(Integer, ForeignKey("devices.id", ondelete="CASCADE"), index=True)  # FIXED: Add CASCADE delete
-    last_updated = Column(DateTime, default=datetime.utcnow)  # FIXED: Correct DateTime usage
     temperature = Column(Integer)
     humidity = Column(Integer)
 
-# Security Cameras Table
-class SecurityCameras(Base):
+class SecurityCameras(BaseDevice):
     __tablename__ = "security_cameras"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    device_id = Column(Integer, ForeignKey("devices.id", ondelete="CASCADE"), index=True)  # FIXED: Add CASCADE delete
-    last_updated = Column(DateTime, default=datetime.utcnow)  # FIXED: Correct DateTime usage
-    status = Column(SQLEnum(SecurityCameraStatus))  # FIXED: Use ENUM instead of list
+    status = Column(SQLEnum(SecurityCameraStatus), nullable=False) 
+
+
+DEVICE_TYPE_MODEL_MAP: dict[str, Any] = {
+    DeviceTypes.SMART_LIGHTS.value: SmartLights,
+    "thermostat": Thermostats,  # Add enum values as needed
+    "security_camera": SecurityCameras
+}

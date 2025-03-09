@@ -42,3 +42,9 @@ The response should confirm the updated status or configuration.
 # Delete a Device:
 
 Implement an endpoint to delete a specific device from the system. The response should confirm the deletion.
+
+... /v1 / device/
+post -> registar a new device with device body 
+
+
+https://github.com/tzelleke/fastapi-sqlalchemy/blob/main/app/core/config.py
