@@ -1,7 +1,13 @@
 version: '3.9'
 
 services:
+  # api:
+  #   build: .
 
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     - device_db
   device_db:
     image: postgres
     restart: unless-stopped
@@ -21,6 +27,31 @@ services:
     volumes:
       # - ./db:/var/lib/postgresql/data
       - ./device_db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+  device-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - device_db
+    environment:
+      # - DEVICE_DATABASE_URL=postgresql+asyncpg://postgres:postgres@device_db:5432/postgres
+      - DEVICE_DATABASE_URL=postgresql://postgres:postgres@device_db:5432/postgres
+    ports:
+      - 8000:8000
+  # api:
+  #   build: .
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - device_db
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://postgres:postgres@device_db/devices_db
+  #   ports:
+  #     - "8000:8000"
+  #   command: >
+  #     sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
   # device_management_api:
   #   container_name: flask_app
   #   image: dockerhub-flask_live_app:1.0.0
@@ -28,7 +59,7 @@ services:
   #   ports:
   #     - "4000:4000"
   #   environment:
-  #     - DB_URL=postgresql://postgres:postgres@flask_db:5432/postgres
+  #     - DB_URL=jdbc:postgresql://localhost:5432/postgres
   #   depends_on:
   #     - device_db
   # adminer:

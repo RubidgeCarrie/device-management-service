@@ -1,5 +1,11 @@
 # device-management-service
 Handles device management for IoT devices
+```bash
+docker compose up device_db
+```
+```bash
+docker-compose up device-api
+```
 
 ## Getting Started
 
@@ -19,6 +25,15 @@ If this is the first time bringing up the project, you need to build the images 
 ```
 docker-compose up --build
 ```
+
+## File Structure 
+.
+├── app
+│   ├── __init__.py
+│   └── main.py
+├── Dockerfile
+└── requirements.txt
+
 
 Create IoT Device Management API:
 
@@ -47,4 +62,55 @@ Implement an endpoint to delete a specific device from the system. The response 
 post -> registar a new device with device body 
 
 
+https://github.com/ThomasAitken/demo-fastapi-async-sqlalchemy/blob/main/backend/app/models/__init__.py
+
 https://github.com/tzelleke/fastapi-sqlalchemy/blob/main/app/core/config.py
+
+https://medium.com/@tclaitken/setting-up-a-fastapi-app-with-async-sqlalchemy-2-0-pydantic-v2-e6c540be4308
+
+scripts/migrate.py file.
+
+import asyncio
+import logging
+
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from alchemist.config import settings
+from alchemist.database.models import Base
+
+logger = logging.getLogger()
+
+
+async def migrate_tables() -> None:
+    logger.info("Starting to migrate")
+
+    engine = create_async_engine(settings.DATABASE_URL)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    logger.info("Done migrating")
+
+
+if __name__ == "__main__":
+    asyncio.run(migrate_tables())
+
+
+
+https://dev.to/devasservice/fastapi-best-practices-a-condensed-guide-with-examples-3pa5
+
+For a PUT request: HTTP 200, HTTP 204 should imply "resource updated successfully". HTTP 201 if the PUT request created a new resource.
+
+For a DELETE request: HTTP 200 or HTTP 204 should imply "resource deleted successfully".
+
+HTTP 202 can also be returned by either operation and would imply that the instruction was accepted by the server, but not fully applied yet. It's possible that the operation fails later, so the client shouldn't fully assume that it was success.
+
+A client that receives a status code it doesn't recognize, but it's starting with 2 should treat it as a 200 OK.
+
+PUT
+
+If an existing resource is modified, either the 200 (OK) or 204 (No Content) response codes SHOULD be sent to indicate successful completion of the request.
+
+DELETE
+
+A successful response SHOULD be 200 (OK) if the response includes an entity describing the status, 202 (Accepted) if the action has not yet been enacted, or 204 (No Content) if the action has been enacted but the response does not include an entity.
+
