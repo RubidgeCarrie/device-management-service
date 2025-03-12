@@ -2,73 +2,87 @@ import uuid
 from dataclasses import Field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, IPvAnyAddress
+from pydantic import BaseModel, ConfigDict, IPvAnyAddress, constr
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.devices import (DeviceTypes, SecurityCameraStatus,
                                 SmartLightStatus)
 
 
-class User(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class DeviceRegister(BaseModel):
 
-    id: int
-    username: str
-    slug: str
-    email: str
-    first_name: str
-    last_name: str
-    is_superuser: bool = False
-
-
-class UserPrivate(User):
-    hashed_password: str
-
-
-# # --- ENUMS ---
-# class DeviceTypes(str, Enum):
-#     SMART_LIGHTS = "smart_lights"
-#     THERMOSTATS = "thermostats"
-#     SECURITY_CAMERAS = "security_cameras"
-
-# --- BASE DEVICE SCHEMA ---
-class BaseDeviceSchema(BaseModel):
-    # id: uuid.UUID
-    id: int
-    device_id: str
-    is_online: bool
-    last_updated: datetime
+    device_type: DeviceTypes
+    ip_address: IPvAnyAddress
+    mac_address: Optional[str] = None
+    registration_date: datetime
 
     class Config:
-        from_attributes = True  # Enables SQLAlchemy to Pydantic conversion
+        orm_mode = True
+        from_attributes = True
+        use_enum_values = True
+        json_schema_extra= {
+            "examples": [
+{
+                        "device_type": "smart_light",
+                        "ip_address": "192.168.1.10",
+                        "mac_address": "00:1a:2b:3c:4d:5e",
+                        "registration_date": "2025-03-12T17:51:02.426Z",
+            }
+            ]
+        }
+
 
 
 # --- DEVICE REGISTER RESPONSE ---
-class DeviceRegisterResponse(BaseModel):
+class DeviceRegisterResponse(DeviceRegister):
+
     id: int
-    device_type: DeviceTypes
-    # ip_address: IPvAnyAddress
-    registration_date: datetime
-    is_online: Optional[bool] = None
-    # device_details: Optional[Union["SmartLightResponse", "ThermostatResponse", "SecurityCameraResponse"]] = None
 
     class Config:
+        orm_mode = True
+        from_attributes = True
+        use_enum_values = True
+
+
+# Common configuration across devices
+class BaseDeviceSchema(BaseModel):
+
+    id: int
+    device_id: str
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
         from_attributes = True
 
 
-# --- SMART LIGHTS ---
-class SmartLightResponse(BaseDeviceSchema):
+class SmartLight(BaseDeviceSchema):
+
     status: SmartLightStatus
 
-
+    
 # --- THERMOSTATS ---
-class ThermostatResponse(BaseDeviceSchema):
+class Thermostat(BaseDeviceSchema):
     temperature: int
     humidity: int
 
 
 # --- SECURITY CAMERAS ---
-class SecurityCameraResponse(BaseDeviceSchema):
+class SecurityCamera(BaseDeviceSchema):
+
     status: SecurityCameraStatus
+
+    # class Config:
+    #     from_attributes = True
+    #     use_enum_values = True
+
+class SecurityCameraDetails(BaseModel):
+    device: DeviceRegisterResponse
+    security_camera: Optional[SecurityCamera] = None
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+        use_enum_values = True

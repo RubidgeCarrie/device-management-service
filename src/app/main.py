@@ -1,18 +1,20 @@
-import sys
-
 from fastapi import FastAPI
 
-from app.routes.devices import router as devices_router  # Import your router
+from app.routes.device_register import device_router, devices_router
 
-app = FastAPI(title="AICO Device Management API", version="1.0")
+app = FastAPI(title="IoT Device Management API", version="1.0")
 
-# Include the devices router
-app.include_router(devices_router, prefix="/v1")
+CURRENT_API_VERSION = "/v1"
+
+app.include_router(device_router, prefix=CURRENT_API_VERSION)
+app.include_router(devices_router, prefix=CURRENT_API_VERSION)
+
+
 
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the AICO Device Management API!"}
+    return {"message": "Welcome to the IoT Device Management API!"}
 
 
 # if __name__ == "__main__":

@@ -114,3 +114,14 @@ DELETE
 
 A successful response SHOULD be 200 (OK) if the response includes an entity describing the status, 202 (Accepted) if the action has not yet been enacted, or 204 (No Content) if the action has been enacted but the response does not include an entity.
 
+Create IoT Device Management API:
+
+Register a New Device: 
+
+List All Devices: Get all devices from static details table
+
+Get Device Details: Get device with its latest status
+
+Update Device Status: Add new device status
+
+Delete a Device: 
