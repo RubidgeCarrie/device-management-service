@@ -39,9 +39,3 @@ It was great getting a chance to work with FastAPI but it definitely had some li
 2. Use Alembic db migrations -> have some form of schema migration automation
 3. Asynchronous requests rather than synchronous requests -> handle concurrent requests better
 4. Crud operations in `src/app/crud` are repetitive, I would neaten up these to make use of a single common query.
-
-# Path to Production
-
-The API Server is running in a container making it easy to host on an EC2 using a 
-
-However, were this meant for production, being AWS based I would have preferences a cloud native solution for the API's, such as API Gateway with lambda integration to handle the requests. This would allow us to more scale with options such as caching on API Gateway and WAF for security.
