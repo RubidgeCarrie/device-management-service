@@ -4,7 +4,7 @@ This service managed IoT devices. It includes a postgres database and API's for 
 
 ![OpenAPI](/docs/openapi.png)
 
-It makes use of:
+It makes use of: \
 [FastAPI](https://fastapi.tiangolo.com/): Web framework for building APIs with Python   \
 [SQLAlchemy](https://www.sqlalchemy.org/): ORM for python  \
 [Pydantic](https://docs.pydantic.dev/latest/): Model Validation, integrates well with FastAPi for swagger documentation \
@@ -98,3 +98,6 @@ Integration tests have been setup for the routes, running against the postgres d
 docker compose build tests 
 docker compose run tests
 ```
+## Architecture Decision Record and Challenges
+
+See [Architecture Decision Record and Challenges](/docs/WRITE_UP.md)
