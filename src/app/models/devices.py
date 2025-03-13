@@ -11,17 +11,17 @@ class Base(DeclarativeBase):
     pass
 
 
-#-----------------------------------
-    # Device registry (device summary)
-#-----------------------------------
+# -----------------------------------
+# Device registry (device summary)
+# -----------------------------------
 
 DeviceTypes = Literal["smart_light", "thermostat", "security_camera"]
+
+
 class DeviceTypesEnum(enum.StrEnum):
     SMART_LIGHT = "smart_light"
     THERMOSTAT = "thermostat"
     SECURITY_CAMERA = "security_camera"
-
-
 
 
 class DeviceRegister(Base):
@@ -31,18 +31,18 @@ class DeviceRegister(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     device_type: Mapped[DeviceTypes] = mapped_column(nullable=False)
-    ip_address: Mapped[str] = mapped_column(INET, nullable=False) 
+    ip_address: Mapped[str] = mapped_column(INET, nullable=False)
     mac_address: Mapped[str] = mapped_column(String(17), nullable=True, unique=True)
     registration_date: Mapped[datetime] = mapped_column(nullable=False)
 
 
-
-#-----------------------------------
-    # Status/ configuration history
-#-----------------------------------
+# -----------------------------------
+# Status/ configuration history
+# -----------------------------------
 
 SecurityCameraStatus = Literal["armed", "disarmed", "alarm", "off"]
 ThermostatStatus = Literal["on", "off"]
+
 
 class BaseDevice(Base):
     __abstract__ = True
@@ -52,7 +52,6 @@ class BaseDevice(Base):
         ForeignKey("device_register.id", ondelete="CASCADE"), index=True
     )
     timestamp: Mapped[datetime] = mapped_column(nullable=False, index=True)
-
 
 
 class Thermostat(BaseDevice):
@@ -67,4 +66,3 @@ class SecurityCamera(BaseDevice):
     __tablename__ = "security_cameras"
 
     status: Mapped[SecurityCameraStatus]
-

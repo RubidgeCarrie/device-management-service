@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  device_db:
+    image: postgres
+    restart: unless-stopped
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./src/device_db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+
+  device-api:
+    build: 
+      context: ./src
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - device_db
+    environment:
+      - DEVICE_DATABASE_URL=postgresql://postgres:postgres@device_db:5432/postgres
+    ports:
+      - 8000:8000
+
+  tests:
+    environment:
+      - DEVICE_DATABASE_URL=postgresql://postgres:postgres@device_db:5432/postgres
+    build: 
+      context: .
+      dockerfile: tests/Dockerfile.tests
+    depends_on:
+      - device_db
+    ports:
+      - 8001:50000

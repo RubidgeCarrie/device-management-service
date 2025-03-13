@@ -14,7 +14,7 @@ def get_all_devices(session: Session) -> List[schemas.DeviceRegisterResponse]:
 
     Args:
         session: Manages persistence operations for ORM-mapped objects.
-    """  
+    """
     devices = session.query(models.DeviceRegister).all()
 
     return [schemas.DeviceRegisterResponse.model_validate(device) for device in devices]
@@ -49,7 +49,9 @@ def delete_device_by_id(session: Session, device_id: int) -> None:
     return {"message": "Device deleted successfully"}
 
 
-def post_device(session: Session, device: schemas.DeviceRegister) -> schemas.DeviceRegisterResponse:
+def post_device(
+    session: Session, device: schemas.DeviceRegister
+) -> schemas.DeviceRegisterResponse:
     """Register a new IoT device.
 
     Args:
@@ -60,11 +62,10 @@ def post_device(session: Session, device: schemas.DeviceRegister) -> schemas.Dev
     device_dict = device.model_dump()
     device_dict["ip_address"] = str(device_dict["ip_address"])
 
-    new_device = models.DeviceRegister(**device_dict) 
+    new_device = models.DeviceRegister(**device_dict)
 
     session.add(new_device)
     session.commit()
     session.refresh(new_device)
 
     return new_device
-

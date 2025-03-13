@@ -22,8 +22,6 @@ CREATE TABLE device_register (
     registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-
-
 -- -- Create Thermostats Table
 CREATE TABLE IF NOT EXISTS thermostats (
     id SERIAL PRIMARY KEY,
@@ -36,14 +34,6 @@ CREATE TABLE IF NOT EXISTS thermostats (
 );
 
 -- -- Create Security Cameras Table
--- CREATE TABLE security_cameras (
---     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
---     device_id UUID REFERENCES devices(id) ON DELETE CASCADE,
---     is_online BOOLEAN NOT NULL DEFAULT TRUE,
---     last_updated TIMESTAMP DEFAULT NOW(),
---     status security_camera_status_enum
--- );
-
 CREATE TABLE IF NOT EXISTS security_cameras (
     id SERIAL PRIMARY KEY,
     device_id INT NOT NULL,
@@ -51,18 +41,6 @@ CREATE TABLE IF NOT EXISTS security_cameras (
     status security_camera_status_enum NOT NULL, 
     FOREIGN KEY (device_id) REFERENCES device_register(id) ON DELETE CASCADE
 );
-
--- Insert Fake Data into Devices Table
--- INSERT INTO devices (id, device_type, ip_address, registration_date) VALUES
---     ('550e8400-e29b-41d4-a716-446655440000', 'smart_light', '192.168.1.10', NOW()),
---     ('550e8400-e29b-41d4-a716-446655440001', 'thermostat', '192.168.1.11', NOW()),
---     ('550e8400-e29b-41d4-a716-446655440002', 'security_camera', '192.168.1.12', NOW());
-
--- INSERT INTO devices (id, device_type, ip_address, registration_date) VALUES
---     ('1', 'smart_light', '192.168.1.10', NOW()),
---     ('2', 'thermostat', '192.168.1.11', NOW()),
---     ('3', 'security_camera', '192.168.1.12', NOW());
-
 ---------------------
 -- Insert sample data
 ---------------------

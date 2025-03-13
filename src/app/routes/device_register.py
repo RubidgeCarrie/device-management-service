@@ -10,8 +10,7 @@ from sqlalchemy.orm import Session
 
 import app.schemas as schemas
 from app.connection import get_device_db
-from app.crud.device_register import (delete_device_by_id, get_all_devices,
-                                      post_device)
+from app.crud.device_register import delete_device_by_id, get_all_devices, post_device
 
 devices_router = APIRouter(
     prefix="/devices",
@@ -68,4 +67,3 @@ def delete_device(
 ):
     """API route to delete a device and its configuration/ status data"""
     return delete_device_by_id(session, device_id)
-

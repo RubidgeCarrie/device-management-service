@@ -1,11 +1,13 @@
-# device-management-service
-Handles device management for IoT devices
-```bash
-docker compose up device_db
-```
-```bash
-docker-compose up device-api
-```
+#  IoT Device Management API:
+
+This service managed IoT devices. It includes a postgres database and API's for interacting with the device details.
+
+![OpenAPI](/docs/openapi.png)
+
+It makes use of:
+[FastAPI](https://fastapi.tiangolo.com/): Web framework for building APIs with Python   \
+[SQLAlchemy](https://www.sqlalchemy.org/): ORM for python  \
+[Pydantic](https://docs.pydantic.dev/latest/): Model Validation, integrates well with FastAPi for swagger documentation \
 
 ## Getting Started
 
@@ -13,115 +15,86 @@ docker-compose up device-api
 * Docker Engine - https://docs.docker.com/engine/install/
 * Docker Compose - https://docs.docker.com/compose/install/
 
-
 ### Run With Docker
 You must have ```docker``` and ```docker-compose``` tools installed to work with material in this section.
 Head to the ```/src``` folder of the project.
-To run the program, we spin up the containers with
-```
-docker-compose up
-```
+
 If this is the first time bringing up the project, you need to build the images first:
 ```
 docker-compose up --build
 ```
 
+To run the program, we spin up the containers with
+```
+docker compose up device_db
+docker-compose up device-api
+```
+
+You can then access openAPI doc at `http://0.0.0.0:8000/docs#/` which has example requests. \
+
+The OpenAPI `yaml` file is also saved in [openapi.yaml](openapi.yaml) but due to conversion the above is preferential.
+
 ## File Structure 
-.
-├── app
-│   ├── __init__.py
-│   └── main.py
-├── Dockerfile
-└── requirements.txt
 
+```bash
+├── docs # A brief summary of approach, improvements and challenges
+├── README.md # Instructions on running and challenges
+├── src
+│   ├── app
+│   │   ├── connection.py
+│   │   ├── crud 
+│   │   ├── main.py # API Main
+│   │   ├── models # SQLAlchemy ORM models
+│   │   │   ├── devices.py
+│   │   ├── routes # FastAPI Routes
+│   │   │   ├── device_register.py
+│   │   │   ├── security_cameras.py
+│   │   │   └── thermostats.py
+│   │   └── schemas # Pydantic Schemas
+│   │       ├── devices.py
+│   ├── device_db # Postgres Database
+│   │   └── init.sql
+│   ├── Dockerfile
+│   └── requirements.txt
+├── tests
+├── docker-compose.yaml
+```
 
-Create IoT Device Management API:
+## Assumptions
 
-# Register a New Device:
+1. We would like to save both device summaries (long-lived/immutable attributes) and their status history
+2. We want to save the history of a device status/configuration changes
 
-Create an endpoint to register a new IoT device. The API should accept the necessary details to uniquely identify and describe the device.
-The response should return the details of the registered device, including a unique identifier.
-List All Devices:
+## API Summary
 
-Implement an endpoint to retrieve a list of all registered devices. This endpoint should return a summary of each device's details.
+**Device summary**: Long-lived/immutable attributes of device \
+**Device status**: Configuration settings for device \
+**Device details**: All information about a device, including static attributes
 
-# Get Device Details:
+The following API's are available:
 
-Create an endpoint to retrieve the details of a specific device by its unique identifier.
+1. **Register a New Device:** 
+    -  `POST` `/devices`
+    - Registers device details
+2. **List all Devices**
+    - `GET` `/devices`
+    -  Returns all devices with a summary of their details
+3. **Get Device Details:**
+    - On a per device type route
+    - `GET` `/security-camera/{device_id}`
+    - Returns all details
+4. **Update Device Status:**
+    - On a per device type route
+        - `POST` `/security-camera`
+        - Adds latest security camera status to history
+5. **Delete a Device**
+    - `DELETE` `/device/{device_id}`
+    - Deletes device from Registry and all status history
 
-# Update Device Status:
+## Testing
+Integration tests have been setup for the routes, running against the postgres database (after standing up device_db), run:
 
-Provide an endpoint to update the status or configuration of a specific device. This could be used, for example, to turn a light on or off, adjust a thermostat, etc.
-The response should confirm the updated status or configuration.
-
-# Delete a Device:
-
-Implement an endpoint to delete a specific device from the system. The response should confirm the deletion.
-
-... /v1 / device/
-post -> registar a new device with device body 
-
-
-https://github.com/ThomasAitken/demo-fastapi-async-sqlalchemy/blob/main/backend/app/models/__init__.py
-
-https://github.com/tzelleke/fastapi-sqlalchemy/blob/main/app/core/config.py
-
-https://medium.com/@tclaitken/setting-up-a-fastapi-app-with-async-sqlalchemy-2-0-pydantic-v2-e6c540be4308
-
-scripts/migrate.py file.
-
-import asyncio
-import logging
-
-from sqlalchemy.ext.asyncio import create_async_engine
-
-from alchemist.config import settings
-from alchemist.database.models import Base
-
-logger = logging.getLogger()
-
-
-async def migrate_tables() -> None:
-    logger.info("Starting to migrate")
-
-    engine = create_async_engine(settings.DATABASE_URL)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    logger.info("Done migrating")
-
-
-if __name__ == "__main__":
-    asyncio.run(migrate_tables())
-
-
-
-https://dev.to/devasservice/fastapi-best-practices-a-condensed-guide-with-examples-3pa5
-
-For a PUT request: HTTP 200, HTTP 204 should imply "resource updated successfully". HTTP 201 if the PUT request created a new resource.
-
-For a DELETE request: HTTP 200 or HTTP 204 should imply "resource deleted successfully".
-
-HTTP 202 can also be returned by either operation and would imply that the instruction was accepted by the server, but not fully applied yet. It's possible that the operation fails later, so the client shouldn't fully assume that it was success.
-
-A client that receives a status code it doesn't recognize, but it's starting with 2 should treat it as a 200 OK.
-
-PUT
-
-If an existing resource is modified, either the 200 (OK) or 204 (No Content) response codes SHOULD be sent to indicate successful completion of the request.
-
-DELETE
-
-A successful response SHOULD be 200 (OK) if the response includes an entity describing the status, 202 (Accepted) if the action has not yet been enacted, or 204 (No Content) if the action has been enacted but the response does not include an entity.
-
-Create IoT Device Management API:
-
-Register a New Device: 
-
-List All Devices: Get all devices from static details table
-
-Get Device Details: Get device with its latest status
-
-Update Device Status: Add new device status
-
-Delete a Device: 
+```bash
+docker compose build tests 
+docker compose run tests
+```

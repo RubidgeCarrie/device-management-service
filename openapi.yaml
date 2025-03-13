@@ -1,0 +1,322 @@
+openapi: 3.1.0
+info:
+  title: IoT Device Management API
+  version: "1.0"
+paths:
+  /v1/device/{device_id}:
+    delete:
+      tags:
+        - Devices
+      summary: Remove device from the system
+      description: >-
+        Remove device and all its configuration, status data and historical
+        records
+      operationId: delete_device_v1_device__device_id__delete
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: Device to remove
+            title: Device Id
+          description: Device to remove
+      responses:
+        "204":
+          description: Successful Response
+        "404":
+          description: Not found
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /v1/devices/:
+    get:
+      tags:
+        - Devices
+      summary: List all registered devices
+      description: Lists all registered devices with their attributes
+      operationId: list_devices_v1_devices__get
+      responses:
+        "202":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/DeviceRegisterResponse"
+                type: array
+                title: Response List Devices V1 Devices  Get
+        "404":
+          description: Not found
+    post:
+      tags:
+        - Devices
+      summary: Register a new device or replace registered device
+      description: API route to register a new device or replace details of an existing one
+      operationId: register_device_v1_devices__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceRegister"
+        required: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceRegisterResponse"
+        "404":
+          description: Not found
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /v1/security-camera/{device_id}:
+    get:
+      tags:
+        - Security Cameras
+      summary: Retrieve the latest details/status for specified security camera
+      description: API route to fetch a device by ID.
+      operationId: get_security_cameras_v1_security_camera__device_id__get
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            description: >-
+              Filter to only return status/configuration information for given
+              security camera
+            title: Device Id
+          description: >-
+            Filter to only return status/configuration information for given
+            security camera
+      responses:
+        "202":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityCameraDetails"
+        "404":
+          description: Not found
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+    post:
+      tags:
+        - Security Cameras
+      summary: Update security camera device status
+      description: API route to to update a thermostat status
+      operationId: update_status_v1_security_camera__device_id__post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SecurityCamera"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityCameraResponse"
+        "404":
+          description: Not found
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+  /:
+    get:
+      summary: Root
+      operationId: root__get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    DeviceRegister:
+      properties:
+        device_type:
+          type: string
+          enum:
+            - smart_light
+            - thermostat
+            - security_camera
+          title: Device Type
+        ip_address:
+          type: string
+          format: ipvanyaddress
+          title: Ip Address
+        mac_address:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Mac Address
+        registration_date:
+          type: string
+          format: date-time
+          title: Registration Date
+      type: object
+      required:
+        - device_type
+        - ip_address
+        - registration_date
+      title: DeviceRegister
+      examples:
+        - device_type: smart_light
+          ip_address: 192.168.1.10
+          mac_address: "00: 1a: 2b: 3c: 4d:5e"
+          registration_date: "2025-03-12T17: 51: 02.426Z"
+    DeviceRegisterResponse:
+      properties:
+        device_type:
+          type: string
+          enum:
+            - smart_light
+            - thermostat
+            - security_camera
+          title: Device Type
+        ip_address:
+          type: string
+          format: ipvanyaddress
+          title: Ip Address
+        mac_address:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Mac Address
+        registration_date:
+          type: string
+          format: date-time
+          title: Registration Date
+        id:
+          type: integer
+          title: Id
+      type: object
+      required:
+        - device_type
+        - ip_address
+        - registration_date
+        - id
+      title: DeviceRegisterResponse
+      examples:
+        - device_type: smart_light
+          ip_address: 192.168.1.10
+          mac_address: "00: 1a: 2b: 3c: 4d:5e"
+          registration_date: "2025-03-12T17: 51: 02.426Z"
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: "#/components/schemas/ValidationError"
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    SecurityCamera:
+      properties:
+        device_id:
+          type: integer
+          title: Device Id
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        status:
+          type: string
+          enum:
+            - armed
+            - disarmed
+            - alarm
+            - "off"
+          title: Status
+      type: object
+      required:
+        - device_id
+        - timestamp
+        - status
+      title: SecurityCamera
+      device_id: 3
+      status: armed
+      timestamp: "2025-03-13T07: 54: 30.772Z"
+    SecurityCameraDetails:
+      properties:
+        summary:
+          $ref: "#/components/schemas/DeviceRegisterResponse"
+        status:
+          anyOf:
+            - $ref: "#/components/schemas/SecurityCameraResponse"
+            - type: "null"
+      type: object
+      required:
+        - summary
+      title: SecurityCameraDetails
+    SecurityCameraResponse:
+      properties:
+        device_id:
+          type: integer
+          title: Device Id
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        status:
+          type: string
+          enum:
+            - armed
+            - disarmed
+            - alarm
+            - "off"
+          title: Status
+        id:
+          type: integer
+          title: Id
+      type: object
+      required:
+        - device_id
+        - timestamp
+        - status
+        - id
+      title: SecurityCameraResponse
+      device_id: 3
+      status: armed
+      timestamp: "2025-03-13T07: 54: 30.772Z"
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError

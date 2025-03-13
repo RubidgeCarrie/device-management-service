@@ -1,0 +1,27 @@
+FROM python:3.13
+
+WORKDIR /dir
+
+# Copy dependency file first
+COPY ./tests/requirements.txt /dir/test_requirements.txt
+COPY ./src/requirements.txt /dir/src_requirements.txt
+
+# Create a virtual environment & install dependencies
+RUN python -m venv /dir/venv \
+    && /dir/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /dir/venv/bin/pip install -r /dir/test_requirements.txt \
+    && /dir/venv/bin/pip install -r /dir/src_requirements.txt
+
+# Set environment variables to use the virtualenv
+ENV VIRTUAL_ENV=/dir/venv
+ENV PATH="/dir/venv/bin:$PATH"
+
+# Copy the dirlication source code
+COPY ./src /dir/src
+COPY ./tests /dir/tests
+
+# Set PYTHONPATH so tests can find src module
+ENV PYTHONPATH=/dir/src:/dir/tests
+
+# Run tests when the container starts
+CMD ["pytest", "--tb=short", "--disable-warnings"]

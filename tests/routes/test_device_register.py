@@ -1,100 +1,99 @@
 """
-Integration tests for 
-"""
-from fastapi import HTTPException
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+Integration tests for Device Registration routes
 
-from app.connection import get_device_db
-from app.main import app  # Assuming your FastAPI app is in app.main
-from app.schemas import DeviceRegister, DeviceRegisterResponse
+Could be improved with fixtures to handle insertion/ removal of data before and after tests
+"""
+from http import HTTPStatus
+
+from fastapi.testclient import TestClient
+
+from src.app.main import CURRENT_API_VERSION, app
+from src.app.schemas import DeviceRegister, DeviceRegisterResponse
 
 # Test client setup
 client = TestClient(app)
 
 
-# this would be replaced with a test DB
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@device_db:5432/postgres"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+class TestListDevices:
+    """Test List devices route"""
+
+    def test_list_devices(self):
+        response = client.get(f"{CURRENT_API_VERSION}/devices/")
+        assert response.status_code == HTTPStatus.ACCEPTED
+        assert isinstance(response.json(), list)  # Expecting list of devices
 
 
-# Dependency override to use the test database
-def override_get_device_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+class TestRegisterDevice:
+    """Test register device with valid data"""
+
+    def test_register_device(self):
+        """Test correct device registration"""
+        # Arrange
+        device_data = {
+            "device_type": "security_camera",
+            "ip_address": "192.168.1.10",
+            "registration_date": "2025-03-13T00:00:00",
+            "mac_address": "00-B0-D0-63-C2-27",
+        }
+
+        # Act
+        response = client.post(f"{CURRENT_API_VERSION}/devices/", json=device_data)
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK
+        assert isinstance(response.json()["id"], int)
+        assert response.json()["ip_address"] == device_data["ip_address"]
+        assert response.json()["device_type"] == device_data["device_type"]
+
+    def test_register_device_invalid_data(self):
+        """Test invalid device body fails"""
+        # Arrange post with invalid ip_address
+        device_data = {
+            "device_type": "security_camera",
+            "ip_address": "invalid_ip",
+            "registration_date": "2025-03-13T00:00:00",
+            "mac_address": "00-B0-D0-63-C2-29",
+        }
+        # Act
+        response = client.post(f"{CURRENT_API_VERSION}/devices/", json=device_data)
+
+        # Assert: Expecting validation error due to invalid IP address
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-# Replace the dependency in the app with the test database dependency
-app.dependency_overrides[get_device_db] = override_get_device_db
+class TestDeleteDevices:
+    """Test delete devices"""
 
+    # TODO: Expand this to confirm delete cascade works to remove data from relevant status table
+    def test_delete_device(self):
+        """Test successful delete"""
+        # Arrange
+        device_data = {
+            "device_type": "security_camera",
+            "ip_address": "192.168.1.11",
+            "registration_date": "2025-03-13T00:00:00",
+            "mac_address": "00-B0-D0-63-C2-28",
+        }
+        register_response = client.post(
+            f"{CURRENT_API_VERSION}/devices/", json=device_data
+        )
+        device_id = register_response.json()["id"]
 
-# Test Register Device API
-def test_register_device():
-    device_data = {
-        "device_type": "security_camera",
-        "ip_address": "192.168.1.10",
-        "registration_date": "2025-03-13T00:00:00",
-        "mac_address": "00-B0-D0-63-C2-27"
-    }
+        # Act
+        response = client.delete(f"{CURRENT_API_VERSION}/device/{device_id}")
 
-    response = client.post("/devices/", json=device_data)
+        # Assert: Expecting no content response (successful deletion)
+        assert response.status_code == HTTPStatus.NO_CONTENT
 
-    assert response.status_code == 200  # Expecting success status code
-    assert response.json()["ip_address"] == device_data["ip_address"]
-    assert response.json()["device_type"] == device_data["device_type"]
+    def test_delete_non_existing_device(self):
+        """Test non existent device id gives 404 on delete attempt"""
+        # Arrange
+        # Assuming this ID does not exist in the database (and we are using a test bd we setup)
+        non_existing_device_id = 9999
 
+        # Act
+        response = client.delete(
+            f"{CURRENT_API_VERSION}/device/{non_existing_device_id}"
+        )
 
-# Test List Devices API
-def test_list_devices():
-    response = client.get("/devices/")
-
-    assert response.status_code == 202  # Expecting accepted status code
-    assert isinstance(response.json(), list)  # Expecting list of devices
-
-
-# Test Delete Device API
-def test_delete_device():
-    # First register a device to delete it
-    device_data = {
-        "device_type": "security_camera",
-        "ip_address": "192.168.1.11",
-        "registration_date": "2025-03-13T00:00:00",
-        "mac_address": "00-B0-D0-63-C2-28"
-    }
-    register_response = client.post("/devices/", json=device_data)
-    device_id = register_response.json()["id"]  # Get the ID of the newly registered device
-
-    # Now delete the device
-    response = client.delete(f"/device/{device_id}")
-
-    assert response.status_code == 204  # Expecting no content response (successful deletion)
-
-
-# Test Register Device with Invalid Data
-def test_register_device_invalid_data():
-    device_data = {
-        "device_type": "security_camera",
-        "ip_address": "invalid_ip",
-        "registration_date": "2025-03-13T00:00:00",
-        "mac_address": "00-B0-D0-63-C2-29"
-    }
-
-    response = client.post("/devices/", json=device_data)
-
-    assert response.status_code == 422  # Expecting validation error due to invalid IP address
-    assert "value is not a valid ip address" in response.text
-
-
-# Test Delete Non-Existing Device
-def test_delete_non_existing_device():
-    non_existing_device_id = 9999  # Assuming this ID does not exist in the database
-    response = client.delete(f"/device/{non_existing_device_id}")
-
-    assert response.status_code == 404  # Expecting device not found error
-
-
+        assert response.status_code == HTTPStatus.NOT_FOUND
