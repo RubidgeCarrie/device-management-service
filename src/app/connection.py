@@ -14,6 +14,7 @@ Base = declarative_base()
 
 
 def get_device_db():
+    """Handle database session"""
     db = SessionLocal()
     try:
         yield db

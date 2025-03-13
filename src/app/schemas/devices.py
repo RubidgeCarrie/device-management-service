@@ -1,27 +1,23 @@
-import uuid
-from dataclasses import Field
 from datetime import datetime
-from enum import Enum
-from typing import Literal, Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, IPvAnyAddress, constr
-from sqlalchemy.orm import Mapped, mapped_column
+from pydantic import BaseModel, IPvAnyAddress
 
 from app.models.devices import (DeviceTypes, SecurityCameraStatus,
-                                SmartLightStatus)
+                                ThermostatStatus)
 
+#-----------------------------------
+    # Device registry (device summary)
+#-----------------------------------
 
 class DeviceRegister(BaseModel):
-
     device_type: DeviceTypes
     ip_address: IPvAnyAddress
     mac_address: Optional[str] = None
     registration_date: datetime
 
     class Config:
-        orm_mode = True
         from_attributes = True
-        use_enum_values = True
         json_schema_extra= {
             "examples": [
 {
@@ -35,54 +31,58 @@ class DeviceRegister(BaseModel):
 
 
 
-# --- DEVICE REGISTER RESPONSE ---
 class DeviceRegisterResponse(DeviceRegister):
-
     id: int
 
     class Config:
-        orm_mode = True
         from_attributes = True
-        use_enum_values = True
 
+#-----------------------------------
+    # Status/ configuration history
+#-----------------------------------
 
-# Common configuration across devices
 class BaseDeviceSchema(BaseModel):
-
-    id: int
-    device_id: str
+    device_id: int
     timestamp: datetime
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
-
-class SmartLight(BaseDeviceSchema):
-
-    status: SmartLightStatus
-
+# --------------
+#  Thermostats
+# --------------
     
-# --- THERMOSTATS ---
 class Thermostat(BaseDeviceSchema):
+    status: ThermostatStatus
     temperature: int
     humidity: int
 
+class ThermostatResponse(Thermostat):
+    id: int
 
-# --- SECURITY CAMERAS ---
+class ThermostatDetails(BaseDeviceSchema):
+    summary: DeviceRegisterResponse
+    status: Optional[ThermostatResponse] = None
+
+# --------------
+#  Security Cameras
+# --------------
+        
 class SecurityCamera(BaseDeviceSchema):
-
     status: SecurityCameraStatus
 
-    # class Config:
-    #     from_attributes = True
-    #     use_enum_values = True
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+  "device_id": 3,
+  "timestamp": "2025-03-13T07:54:30.772Z",
+  "status": "armed"
+}
+
+
+class SecurityCameraResponse(SecurityCamera):
+    id: int
 
 class SecurityCameraDetails(BaseModel):
-    device: DeviceRegisterResponse
-    security_camera: Optional[SecurityCamera] = None
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
-        use_enum_values = True
+    summary: DeviceRegisterResponse
+    status: Optional[SecurityCameraResponse] = None

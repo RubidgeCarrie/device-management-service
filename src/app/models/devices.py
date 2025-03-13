@@ -2,10 +2,8 @@ import enum
 from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import Enum as SQLEmun
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import INET
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -13,11 +11,17 @@ class Base(DeclarativeBase):
     pass
 
 
-DeviceTypes = Literal["smart_light", "thermostat", "security_camera"]
+#-----------------------------------
+    # Device registry (device summary)
+#-----------------------------------
 
-SecurityCameraStatus = Literal["armed", "disarmed", "alarm", "off"]
-ThermostatStatus = Literal["on", "off"]
-SmartLightStatus = Literal["on", "off"]
+DeviceTypes = Literal["smart_light", "thermostat", "security_camera"]
+class DeviceTypesEnum(enum.StrEnum):
+    SMART_LIGHT = "smart_light"
+    THERMOSTAT = "thermostat"
+    SECURITY_CAMERA = "security_camera"
+
+
 
 
 class DeviceRegister(Base):
@@ -33,38 +37,34 @@ class DeviceRegister(Base):
 
 
 
-#----------------
-    # Historic status/ configuration 
-#----------------
+#-----------------------------------
+    # Status/ configuration history
+#-----------------------------------
 
+SecurityCameraStatus = Literal["armed", "disarmed", "alarm", "off"]
+ThermostatStatus = Literal["on", "off"]
 
 class BaseDevice(Base):
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     device_id: Mapped[int] = mapped_column(
-        ForeignKey("devices.id", ondelete="CASCADE"), index=True
+        ForeignKey("device_register.id", ondelete="CASCADE"), index=True
     )
     timestamp: Mapped[datetime] = mapped_column(nullable=False, index=True)
 
-    
-class SmartLights(BaseDevice):
-    __tablename__ = "smart_lights"
-
-    status: Mapped[SmartLightStatus]
 
 
-class Thermostats(BaseDevice):
+class Thermostat(BaseDevice):
     __tablename__ = "thermostats"
 
     status: Mapped[ThermostatStatus]
-    temperature: Mapped[int] = mapped_column(Integer)
-    humidity: Mapped[int] = mapped_column(Integer)
+    temperature: Mapped[int]
+    humidity: Mapped[int]
 
 
 class SecurityCamera(BaseDevice):
     __tablename__ = "security_cameras"
 
-    status: Mapped[SecurityCameraStatus] = mapped_column()
+    status: Mapped[SecurityCameraStatus]
 
-# if __name__ == "__mi"

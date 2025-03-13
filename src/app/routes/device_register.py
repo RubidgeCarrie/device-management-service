@@ -1,16 +1,17 @@
-# from importlib import import_module
-
+"""
+Device Registry containing summary of devices and unique identifiers.
+This includes all long-lived/ immutable attributes for the device.
+"""
 from http import HTTPStatus
-from typing import Annotated, List
+from typing import List
 
-from fastapi import APIRouter, Body, Depends, Path
-# from app.config import API_VERSION
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
 import app.schemas as schemas
 from app.connection import get_device_db
 from app.crud.device_register import (delete_device_by_id, get_all_devices,
-                                      get_device_by_id, post_device)
+                                      post_device)
 
 devices_router = APIRouter(
     prefix="/devices",
@@ -36,7 +37,7 @@ def register_device(
     session: Session = Depends(get_device_db),
 ):
     """API route to register a new device or replace details of an existing one"""
-    return post_device(db_session=session, device=device)
+    return post_device(session=session, device=device)
 
 
 # List All Devices:
@@ -52,23 +53,6 @@ def list_devices(
 ):
     """API route to list all devices and their attributes"""
     return get_all_devices(session)
-
-# Get Device Attributes:
-@device_router.get(
-    "/{device_id}",
-    response_model=schemas.DeviceRegisterResponse,
-    status_code=HTTPStatus.ACCEPTED,
-    summary="List all registered devices",
-    description="Lists all registered devices with their configuration",
-)
-def get_user(
-    device_id: int = Path(
-        description="Filter to only return configuration for specific device"
-    ),
-    session: Session = Depends(get_device_db),
-):
-    """API route to fetch a device by ID)."""
-    return get_device_by_id(session, device_id)
 
 
 # Delete a Device:
